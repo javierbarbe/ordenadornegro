@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/css" href="xml.css"?>
+<Ejercicio1>
+    <Persona>
+        <nombre>Juanito</nombre>
+        <apellidos>Calamidad</apellidos>
+        <telefono>
+            <movil>657584232</movil>
+            <fijo>91 658 65 56</fijo>
+            <trabajo>91 3352 68 74</trabajo>
+        </telefono>
+        <Direccion>C/El paseo</Direccion>
+    </Persona>
+    <Clase>
+        <Numero>02</Numero>
+        <Titulo>Nodos</Titulo>
+        <Duracion>25 minutos</Duracion>
+    </Clase>
+    
+</Ejercicio1>

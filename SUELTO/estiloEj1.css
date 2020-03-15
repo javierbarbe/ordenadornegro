@@ -1,0 +1,14 @@
+div { width: 20%;
+   margin: auto; background-color: aquamarine;
+}
+div +div{ width: 95%;
+margin:auto;
+background-color: brown;}
+textarea{width: 85%;}
+
+#elimina{
+    float: right;
+}
+li[type="text"]{
+    
+}

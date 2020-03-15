@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE pedidos SYSTEM "./practica3m.dtd">
+<pedidos>
+    <pedido codigo="Z2345627"   plazo_revision="3" >
+      
+       <trabajador nombre="Jose Luis"/>
+       <fecha dia="12" mes="12" anio="1987"/>
+       <observaciones tipo="urgente"></observaciones>
+        <articulo cod_articulo="32">
+           <n_unidades >3</n_unidades>
+           <precio>66</precio>
+           <observaciones>s d</observaciones>
+        </articulo>
+        <sucursal>
+                <direccion> mi casa
+                </direccion>
+                <direccion_envio> dire envio 1
+
+                </direccion_envio>
+                <direccion_envio>
+                dire envio 1
+                </direccion_envio>
+            </sucursal>
+            <albaran>1233</albaran>
+
+    </pedido>
+    <pedido codigo="Z2345622"   plazo_revision="3" >
+      
+       <trabajador nombre="Jose Luis"/>
+       <fecha dia="12" mes="12" anio="1987"/>
+       <observaciones tipo="urgente"></observaciones>
+        <articulo cod_articulo="32">
+           <n_unidades >3</n_unidades>
+           <precio>66</precio>
+           <observaciones>s d</observaciones>
+        </articulo>
+        <sucursal>
+                <direccion> mi casa
+                </direccion>
+                <direccion_envio> Envio 1
+
+                </direccion_envio>
+                <direccion_envio>
+              dire envio 2
+                </direccion_envio>
+            </sucursal>
+            <albaran>1233</albaran>
+
+    </pedido>
+</pedidos>
+

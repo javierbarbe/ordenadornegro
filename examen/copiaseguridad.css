@@ -1,0 +1,28 @@
+form{
+    width: 80%;
+    margin: auto;
+    border-style: double;
+    border-color: black;
+    background-color: green;
+    /* background-color:  */
+}
+div fieldset{
+    width: 65%;
+    margin: auto;
+}
+
+form div{background-color: greenyellow;}
+#izquierda{float: left; width: 45%;}
+
+ div form #franja{
+    width: 80%;
+    border-color: hotpink;
+    border-style: double;
+    border-width: 3px;
+}
+
+#simpleDerecha{
+    width: 45%;
+    float: right;
+}
+body{background-color: indigo;}

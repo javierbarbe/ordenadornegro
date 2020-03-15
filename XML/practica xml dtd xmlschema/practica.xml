@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<pedidos  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:noNamespaceSchemaLocation="./preexamen.xsd">
+
+<!-- <!DOCTYPE pedidos SYSTEM "./pract3ica.dtd"> -->
+
+    <pedido codigo="Z23456278"  observaciones="urgente" plazo_revision="3-4 dias" >
+        
+        <trabajador nombre="Jose Luis"/>
+       <fecha dia="12" mes="12" anio="31"/>
+        <observaciones >hol a</observaciones>
+        <articulo cod_articulo="AAA-222">
+           <n_unidades >a3</n_unidades>
+           <precio>a3</precio>
+           <observaciones>sd</observaciones>
+        </articulo>
+
+    </pedido>
+</pedidos>
+

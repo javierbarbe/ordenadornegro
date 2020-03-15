@@ -1,0 +1,36 @@
+<html>
+  <head>
+    <title>Ejemplo de agrupaci&oacute;n de elementos en un formulario</title>
+  </head>
+  <body>
+    <form action="procesar-datos.php" method="post">
+      <fieldset>
+        <legend>Agrupaci&oacute;n de varios controles:</legend>
+        Campo de texto:
+        <br>
+        <input type="text" name="campo_de_texto">
+        <br>
+	<label for="clave_usuario">Contrase&ntilde;a: </label>
+        <br>
+        <input type="password" name="clave" id="clave_usuario">
+	<br>
+        Lista de selecci&oacute;n:
+        <br>
+        <select name="lista_de_seleccion">
+          <option value="opcion1">Opci&oacute;n 1</option>
+          <option value="opcion2">Opci&oacute;n 2</option>
+          <option value="opcion3">Opci&oacute;n 3</option>
+        </select>
+        <br>
+        Área de texto:
+        <br>
+        <textarea name="area_de_texto" rows="3" cols="50">En este control del formulario se pueden escribir varias l&iacute;neas de texto.</textarea>
+      </fieldset>
+      <fieldset>
+        <legend>Agrupaci&oacute;n de botones:</legend>
+        <button type="reset">Resetear</button>
+        <button type="submit">Enviar</button>
+      </fieldset>
+    </form>
+  </body>
+</html>

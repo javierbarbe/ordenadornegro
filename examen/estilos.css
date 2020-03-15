@@ -1,0 +1,20 @@
+div{ width: 100%;}
+
+
+
+form{background-color: blueviolet;}
+.izquierda{
+    width: 45%;
+    float: left;
+    
+}
+
+.derecha{ width: 45%;
+    }
+
+.bloque {background-color: brown;
+margin: auto;}
+
+.largo{
+    width: 80%;
+}

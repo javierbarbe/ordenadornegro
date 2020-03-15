@@ -1,0 +1,20 @@
+<!ELEMENT pedidos (pedido)>
+<!ELEMENT pedido  (trabajador,fecha,observaciones?,articulo)>
+    <!ATTLIST pedido codigo CDATA #REQUIRED >
+    <!ATTLIST pedido  observaciones (urgente|incompleto) #IMPLIED>
+    <!ATTLIST pedido plazo_revision CDATA #REQUIRED>
+    <!ELEMENT trabajador EMPTY>
+       <!ATTLIST trabajador nombre CDATA #REQUIRED>
+    <!ELEMENT fecha EMPTY> 
+        <!ATTLIST fecha dia CDATA  #REQUIRED>
+        <!ATTLIST fecha mes CDATA  #REQUIRED>
+        <!ATTLIST fecha anio CDATA  #REQUIRED>
+    <!ELEMENT observaciones (#PCDATA)>
+        
+    <!ELEMENT articulo (n_unidades,precio,observaciones)>
+        <!ELEMENT n_unidades (#PCDATA)>
+        <!ELEMENT precio (#PCDATA)>
+        <!ATTLIST articulo cod_articulo CDATA  #REQUIRED>
+
+
+

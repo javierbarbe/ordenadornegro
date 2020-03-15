@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+
+<!DOCTYPE pedidos SYSTEM "./practica.dtd">
+<pedidos>
+    <pedido codigo="Z2345627"  observaciones="urgente" plazo_revision="3" >
+        
+        <trabajador nombre="Jose Luis"/>
+       <fecha dia="12" mes="12" anio="1987"/>
+        <observaciones >hola</observaciones>
+        <articulo cod_articulo="32">
+           <n_unidades >3</n_unidades>
+           <precio>66</precio>
+           <observaciones>s d</observaciones>
+        </articulo>
+
+    </pedido>
+</pedidos>
+
