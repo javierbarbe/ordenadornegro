@@ -1,0 +1,46 @@
+ pruebas que permitan comprobar que el producto que se está creando, 
+es correcto y cumple con las especificaciones solicitadas por el usuario.
+	La verificación es la comprobación de que un sistema o parte de un sistema, 
+cumple con las condiciones impuestas. Con la verificación se comprueba si la
+ aplicación se está construyendo correctamente.
+	La validación es el proceso de evaluación del sistema o de uno de sus componentes,
+ para determinar si satisface los requisitos especificados.
+
+ las pruebas empezarán con la pruebas unitarias de cada porción de código
+seguirá con las pruebas de integración, donde se ponen todas las
+ partes del código en común, 
+la prueba de validación =>cumple  requisitos de software.
+
+Finalmente se alcanza la prueba de sistema que verifica el funcionamiento total 
+del software y otros elementos del sistema.
+
+Pruebas de la caja negra o funcionales.
+	-Aquí lo fundamental es comprobar que los resultados de la ejecución de la
+ 	aplicación, son los esperados, en función de las entradas que recibe.
+	sin tener necesidad de conocer la estructura interna del sistema. 
+
+Pruebas de la caja blanca o estructurales.
+ 	-analizar y probar directamente el código de la aplicación, intentando localizar
+	 estructuras incorrectas o ineficientes en el código.
+
+Enfoque aleatorio.
+	-utilizar modelos que representen las posibles entradas al programa, para crear a 
+	partir de ellos los casos de prueba
+
+PRUEBAS DE REGRESION
+ se deben llevar a cabo cada vez que se hace un cambio en el sistema, para comprobar 
+que los cambios efectuados no han alterado el resto del codigo
+
+DOCUMENTACION DE LA PRUEBA
+	-Plan de Pruebas: forma parte del Análisis del Sistema.
+	-Especificación del diseño de pruebas: Determina patuas de pruebas para los bloques en los que ha sido dividido el programa en la fase de diseño.
+	-Especificación de un caso de prueba: Fase de implementación.
+	-Especificación de procedimiento de prueba. será preciso detallar el modo en que van a ser ejecutados los casos
+ 	prueba. Incluye los resultados esperados en cada caso de prueba y las pruebas unitarias a realizar.
+	-Registro de pruebas.
+	-Informe de incidente de pruebas. 
+
+VALIDACION
+Muy importante el cliente, que es quien nos tiene que dar el ok a nuestra app.
+
+CAJA BLANCA
