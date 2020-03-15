@@ -1,0 +1,29 @@
+15 // se imprime una vez 10+10, aumentan las variables dentro de sus bucles 
+hasta 10 y luego imprime 10*10
+16) a. imprime j que vale 0 0 1 0 1 2 0 1 2 3
+	b. imprime a partir de j=i=2 // no imprime nada... porqué?
+	c. imprime  1***2***4***8***16***
+				1***2***4***8***
+				1***2***4***
+				1***2***
+				1***
+	
+	d.	1G
+
+		1G
+		3G
+		
+		1G
+		3G
+		5G
+		
+		1G
+		3G
+		5G
+		7G
+		
+		1G
+		3G
+		5G
+		7G
+		9G
