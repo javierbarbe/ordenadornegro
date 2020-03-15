@@ -1,0 +1,81 @@
+-----------------------------------
+BASH SCRIPTING
+-----------------------------------
+EN linux los ficheros no tienen extensiones, el contenido se interpreta en funcion de los metadatos del fichero. 
+Los ficheros de tipo script empiezan con estos dos caracteres:
+
+#! /bin/bash
+
+
+COMENTARIOS
+-----------
+los comentarios en linux se ponen con el caracter: #
+pueden aparecer al principio de una linea o al final
+
+#..... esta linea esta comentada
+#..... esta linea tambn esta comentada
+ps -e -f #comando para mostrar info de procesos 
+
+si quieres comentar un grupo de lineas tendrias que ir linea por linea poniendo # delante; truco :
+
+: <<delimitador
+......
+......
+......
+delimitador
+
+ej: 
+: <<kk
+esta es la primera linea de comentario
+esta es la segunda linea
+ps -e -f 
+.... y otra .....
+kk
+
+
+------------------------
+COMO EJECUTAR UN SCRIPT
+-------------------------
+Para poder ejecutar un script:
+	1º) dar permisos de ejecucion al script, para ello se usa el comando:
+		
+		chmod a+x /ruta/nombre_script
+		      ---
+			\--> a = all-users
+			     +x = + significa añadir el permiso "x" de ejecucion
+
+
+	2º) para ejecutar un script, te situas en el directorio donde esta el 		    script:
+			./nombre_script
+
+
+--------------------
+VARIABLES EN SCRIPTS
+--------------------
+En bash no existen tipos de variables, simplemente almacenas el valor que quieras en la variable. El incoveniente surge cuando haces un uso indebido del contenido de la variable
+
+Ej: operaciones con string,....saltara un error
+
+nombre_variable = valor
+
+puedo almacenar en variables el resultado de la ejecucion de un comando o comandos:
+1º forma)
+	noombre_variable=`comando1...`
+
+2º forma)
+	$():
+	nombre_variable=$(comando1...)
+
+
+¿ COMO RECUPERO EL VALOR DE UNA VARIABLE ?
+	$nombre_variable   o   ${nombre_variable}
+
+
+
+¿ COMO PIDO EL VALOR DE UNA VARIABLE ?
+	read [-opciones] nombre_variable
+	     -----------
+		\--> -p "mensaje prompt"
+		     -s (modo silencioso) (no aparece en pantalla lo que escribes)
+		     -t numero_seg --> limite de tiempo para meter un valor
+		     -n num_max_caract  --> nº maximo de caracteres

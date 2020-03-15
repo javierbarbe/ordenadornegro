@@ -1,0 +1,346 @@
+--------------------------
+  ADMINISTRACION LOGS
+http://www.rsyslog.com
+--------------------------
+el demonio encargado de la gestion de logs:  rsyslog.service
+para ver el estado del demonio:
+
+	systemctl status rsyslog.service
+
+para ver la configuracion del demonio:
+
+	systemctl cat rsyslog.service
+
+y sus dependencias (cuando arranca, de lo q depende, etc)
+
+	systemctl list-dependencies rsyslog.service
+
+funcionamiento del demonio:
+===========================
+    INPUT-MODULES						OUPUT-MODULES
+(de donde recibe rsyslog los				(donde registra esos 
+mensajes)						mensajes)
+ grupo-demonios-auth
+ -------------------
+    login.service ------socket---|
+    apache2.service----socket----|
+    vsftp2.service ----socket----|
+   ...
+
+ grupo-demonios-tareas
+ ---------------------
+   cron.service ---------socket---|				- fichero log
+   anacron.service ------socket---|---->rsyslog.service -------> - BD
+   ....					recibe todos los 	- servidor ext.
+				mensajes de los diferentes	- ejecutar pgm
+				demonios y los clasifica segun
+				unas reglas donde se definen
+				patrones q deben cumplir los mensajes
+				para mandarlos a uno destino u otro
+ 
+
+configuracion de rsyslog:  <--- todo en /etc/rsyslog.d
+========================	y fichero global: /etc/rsyslog.conf
+tiene un fichero de configuracion "global" (se suelen definir inputmodules de
+donde se van a recibir los mensajes, plantillas de registro de los mensajes,
+variables de entorno globales de resyslog, ...)
+
+  el fichero esta en /etc <--- y se llama:  rsyslog.conf
+
+
+
+ #----seccion INPUTMODULES--------------------------
+module(load="imuxsock") # provides support for local system logging
+module(load="imklog" permitnonkernelfacility="on")
+
+
+
+ #----seccion de VARIABLES y DIRECTIVAS ---------------
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+$RepeatedMsgReduction on
+$FileOwner syslog
+$FileGroup adm
+$FileCreateMode 0640
+$DirCreateMode 0755
+$Umask 0022
+$PrivDropToUser syslog
+$PrivDropToGroup syslog
+
+$WorkDirectory /var/spool/rsyslog
+
+$IncludeConfig /etc/rsyslog.d/*.conf <------- en el directorio /etc/rsyslog.d
+				         hay una serie de ficheros *.conf
+					 donde se definen las reglas de
+					 registro de los mensajes de los
+					 diferentes demonios (se interpretan
+					por orden alfabetico en el nombre del
+					fichero ...por eso tienen un numero
+					delante del nombre)
+
+p.e, el contenido del fichero 50-default.conf:
+
+auth,authpriv.*			/var/log/auth.log
+*.*;auth,authpriv.none		-/var/log/syslog
+kern.*				-/var/log/kern.log
+mail.*				-/var/log/mail.log
+
+mail.err			/var/log/mail.err
+
+
+*.emerg				:omusrmsg:*
+
+
+formato de reglas en rsyslog:
+-----------------------------
+cada linea de un fichero .conf indica el patron de una regla a testear sobre
+un mensaje. Por cada mensaje q recibe rsyslog lo va contrastando con cada regla
+y si cumple una regla, la ejecuta registrando el mensaje con la accion q indica esa regla:
+
+ filtro(patron a cumplir)		accion_a_hacer_sobre_mensaje
+ ========================		============================ 
+auth,authpriv.*				/var/log/auth.log
+ ----------				------------------
+  \-->si el mensaje proviene		fichero log de destino
+	de un demonio q pertenece
+	al grup auth o authpriv
+	y tiene cualquier importancia (*)
+ grados de severidad:
+ debug, info, notice, warning, warn (same as warning), err, error (same
+       as err), crit, alert, emerg,  panic 
+
+ se cumple el grado q pongas y los inferiores a no ser 
+q especifiques con un "=" exactamente el grado de severidad
+q ponga
+
+
+ *.*;auth,authpriv.none			-/var/log/syslog
+ ---------------------- 		----------------
+  si el mensaje proviene		fichero log de destino pero se almacenan
+de cualquier grupo de demonios(*)	de forma ASINCRONA los mensajes (por
+con cualquier severidad (.*) SALVO	bloques), eso es el "-" delante de la
+los del grupo: auth,authpriv.none	ruta
+
+ Puedes poner mas condiciones en
+funcion del contenido del mensaje
+(bloques if)Viendo las caracteristicas
+del mensaje lo rediriges a un sitio u a 
+otro
+(ver Filter-conditions y Property-replacer)
+
+
+como destino de los mensajes a parte de ficheros puedes meter:
+
+	- un servidor:   @ip-del-servidor[;plantilla_mensaje]<-----(tcp)
+			@@ip-del-servidor[;plantilla_mensaje]<-----(udp)
+
+	- ejecucion de un script:   ^/ruta/nombre_del_script
+	(el mensaje le llega como parametro....$1)
+
+	- a una tuberia:	   | comando_interpretan_mensajes
+
+
+Rotacion LOGS ---> se lanza en un script como tarea programada diaria
+-------------	por cron: /etc/cron.daily/logrotate:
+
+#!/bin/sh
+
+# Clean non existent log file entries from status file
+
+cd /var/lib/logrotate
+
+test -e status || touch status
+head -1 status > status.clean
+sed 's/"//g' status | while read logfile date
+		      do
+    			test -e "$logfile"  && echo "\"$logfile\" $date"
+		     done >> status.clean
+mv status.clean status
+
+test -x /usr/sbin/logrotate || exit 0
+
+
+/usr/sbin/logrotate /etc/logrotate.conf 
+------------------- -------------------
+  ejecutable		fich.conf.rotacion logs
+
+
+ej rotacion log auth:  
+
+/var/log/auth.log
+{
+	rotate 4
+	weekly
+	missingok
+	notifempty
+	compress
+	delaycompress
+	sharedscripts
+	postrotate
+		/usr/lib/rsyslog/rsyslog-rotate
+	endscript
+}
+
+
+
+=====================================================================
+ practica
+ --------
+ IP:X.Y.Z.W puerto:514
+ servidor-logs			 clientes-log
+ -------------			--------------
+ rsyslog.service		rsyslog.service
+ 
+configurarlo para		configurarlo para q mande los mensajes de auth
+que:				al servidor: X.Y.Z.W:xxx (si cambiais puerto,
+- escuche por un puerto		indicarlo)
+  (por defecto es el 514)		\---> programar un script q mande
+- udp					mensajes al log de tipo auth 
+- los mensajes de auth:			de forma continua para provocar 
+   - los locales los manda		la rotacion en el server
+	a fichero /var/log/auth.log
+
+   - los remotos los mande
+	a fichero /var/log/auth_remote.log
+	con plantilla personalizada:
+
+	"mensaje de auth.log de ip:.... 
+	a la hora:..... con contenido: ...."
+
+- la rotacion de los log de auth sea dirariamente
+  o cuando a un tamaño de 100Kb, maximo numero de
+  rotaciones de 6 ficheros
+-----------------------------------------------
+en servidor:
+
+ fichero config: (añadir) 
+/etc/rsyslog.conf
+-----------------
+module(load="imudp")
+input(type="imudp" port="514")
+
+template(name="miplantilla" type="string"
+	string="mensaje de auth.log de ip: -- %fromhost-ip% -- a la hora: %timegenerated% .... con contenido: %msg%"
+)
+
+
+fichero de reglas: (añadir)
+/etc/rsyslog.d/50-default.conf
+------------------------------
+if $msg startswith "REMOTEAUTH" then { 
+			action(type="omfile" 
+			       file="/var/log/auth_remote.log"
+				template="miplantilla")
+			stop
+				}
+
+auth,authpriv.*		/var/log/auth.log
+
+
+REINICIAR EL SERVICIO!!!!
+systemctl restart rsyslog.service
+
+
+-------------------------------------------------
+en cliente:
+ fichero config: (añadir) 
+/etc/rsyslog.conf
+-----------------
+template(name="mensajesExt" type="string"
+	 string="REMOTEAUTH mensaje auth al externo...%msg%"
+)
+	
+
+
+fichero de reglas: (modificar)
+/etc/rsyslog.d/50-default.conf
+------------------------------
+auth,authpriv.*		@@X.Y.Z.W;mensajesExt
+
+REINICIAR EL SERVICIO!!!
+systemctl restart rsyslog.service
+
+----------------------------------------------------
+
+para probarlo, en servidor:
+	touch /var/log/auth_remote.log
+	tail -f /var/log/auth_remote.log
+
+
+en cliente:
+ logger -p auth.err -t "[PRUEBA]" "....mensaje de prueba al servidor...."
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

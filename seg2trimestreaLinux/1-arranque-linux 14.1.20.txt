@@ -1,0 +1,195 @@
+--------------------------------
+  proceso de arranque de linux
+--------------------------------
+en el MBR, se instala el stage_1 del gestor de arranque de
+linux, llamado GRUB. En el arranque de la maquina al leerse
+el MBR, se carga en memoria y lo q hace es leer la tabla
+de particiones y te muestra un menu de arranque con los
+sistemas operativos disponibles.
+
+Si solo tienes Linux instalado te carga el primer sector
+de la particion linux donde se encuentra el stage_2 de GRUB
+(el segundo modulo del gestor de arranque de linux), q se
+encarga de inicializar la carga del sistema operativo:
+
+	- carga en memoria el fichero INITIAL-RAM-DISK
+
+el fichero es importante pq prepara la carga del kernel del
+sistema operativo, al hacer:
+
+	- crea un sistema ficheros temporal en memoria RAM
+	  (tmpfs <--- temporal file system) tiene forma
+	  jerarquica con este contenido:
+
+		/ (root)
+		 |---> /etc <---ficheros de configuracion
+			 	de servicios de arranque
+				y drivers basicos para inici
+				kernel
+
+		 |-->  /bin <--- comandos ejecutables q 
+				lanzan los servicios
+
+		 |-->  /sbin <-- comandos ejecutables con
+				privilegios elevados para
+				proceso INIT
+
+		 |--> /grub <-- comandos consola 					recuperacion gestor arranque
+
+		 |--->/services <--- ficheros de configurac.
+				de los servicios a lanzar 
+				por proceso INIT
+
+		|---> init* <===SCRIPT q se autoejecuta y
+				es el encargado de:
+
+ - cargar en memoria los drivers q se encuentran en el
+  el initial-ram-disk, carga el kernel de linux:
+
+	fichero: vmlinuz-version
+
+  cuando se carga el kernel, crea el proceso inicial o
+ proceso INIT es el encargado ya del arranque del sistema:
+
+	- cargar sistema de ficheros y montarlo
+	- cargar servicios de arranque
+	- cargar entorno de usuario
+
+ en funcion de la distribucion de linux el proceso INIT
+hace esto de diferente forma:
+
+ - en las distribuciones basadas en SYSINIT V, el proceso
+  INIT funciona con RUNLEVELS o niveles de arranque; en 
+  funcion del runlevel que quieras arrancar el proceso
+  init carga unos servicios u otros:
+
+	runlevel		significado
+	--------		-----------
+	  0 ---------------------> apagado del sistema
+			(lo q hace init es ejecutar scripts
+			y servicios de apagado)
+
+	  1 --------------------> monousuario(root), sin
+				red, sin entorno grafico
+
+	  2			(reservado)
+	  3			(reservado)
+	  4			(reservado)
+
+	  5 --------------------> multiusuario,con red,
+				con entorno grafico
+
+	  6 ---------------------> reinicio del sistema
+			(lo q hace init es ejecutar scripts
+			y servicios para el reinicio del
+			sistema)
+
+   para cada runlevel existe un directorio donde se 
+encuentran los servicios/programas a ejecutar:
+
+	/etc/rc_nºrunlevel.d
+
+ej:  runlevel 0 ---> /etc/rc0.d
+
+ los servicios/programas a ejecutar tienen esta nomenclatura
+	Knumero_nombre ---> K=kill (parar servicio/pgm)
+	Snumero_nombre ---> S=Start (arrancar servicio/pgm)
+
+
+
+
+ - distribuciones basadas en SYSTEMD (system-daemon). Para saber si la distro tiene arranque SYSNIT o SYSTEMD, podemos ejecutar:
+	ps -p 1 ---> da info del proceso con PID = 1 ( si la salida te da: 
+	
+	PID TTY		TIME 		CMD
+	  1  ?		00: 00: 02  	systemd <-- system-daemon, si pusiera "init", seria SYSINIT
+
+System-daemon realiza el arranque por unidades de servicios, drivers...que se llaman "targets". En funcion del tipo de arranque 
+que se selecciona systemd carga un determinado "target" (para verlos: 
+									man systemd.specials)
+
+Por compatibilidad con los antiguos sistemas basados en SYSINIT y sus RUNLEVELS, systemd crea targets para los distintos runlevel:
+	runlevel 0 <----- se crea un enlace "poweroff.target"
+	runlevel 1 <----- se crea un enlace "rescue.target"
+	runlevel 2, 3, 4 <----- se crea un enlace "multi-user.target"
+	runlevel 5 <----- se crea un enlace "graphical.target"
+	runlevel 6 <----- se crea un enlace "reboot.target"
+
+Para verlos : cd /lib/systemd/system		ll run*.target
+
+El proceso de carga de los distintos target por parte de systemd : man bootup
+
+La ventaja que tiene Systemd es que arranca en paralelo varios "target", al contrario que hacia "init" con los scripts, servicios que hay en un RUNLEVEL
+(que tiene que ir uno por uno ejecutandose)
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

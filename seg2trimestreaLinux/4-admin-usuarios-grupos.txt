@@ -1,0 +1,339 @@
+------------------------------------------
+ ADMINITRACION USUARIOS Y GRUPOS
+------------------------------------------
+El servicio encargado de la autentificacion de los usuarios en linux
+se llama "login" (man login) y es controlado por systemd por una unidad
+llamada:
+
+	login.service
+
+para ver el estado:  systemctl status login.service
+
+(para ver el fichero de configuracion del servicio:
+		systemctl cat login.service     
+
+el servicio de LOGIN como cualquier otro servicio q requiera de necesidades
+de autentificacion se basa en PAM ("Pluggable Autentication Modules")
+
+	login.service	apache2.service  ssh.service ....
+	   |		    |		    |
+	   ----------------------------------
+			|
+		  reglas PAM
+
+el conjunto de reglas PAM q se aplican al servicio de "login" estan en 
+/etc/pam.d -----> login
+las reglas (no comentadas) q lo regulan:
+
+  grep -v -e "^#.*" /etc/pam.d/login
+
+las reglas q empiecen con "auth" son las q configuran el proceso de auten
+tificacion en el servicio de login:
+
+  grep -e "^\(auth\|@include .*auth\).*" /etc/pam.d/login
+
+me salen:
+
+
+
+auth       optional   pam_faildelay.so  delay=3000000
+auth [success=ok new_authtok_reqd=ok ignore=ignore user_unknown=bad
+					default=die] pam_securetty.so
+auth       requisite  pam_nologin.so
+@include   common-auth <-------------- se importan las reglas definidas
+					en fichero common-auth:
+
+auth	[success=1 default=ignore]	pam_unix.so nullok_secure
+auth	requisite			pam_deny.so
+auth	required			pam_permit.so
+auth	optional			pam_cap.so 
+
+
+auth       optional   pam_group.so
+
+
+
+cada regla PAM se configura asi:
+
+   auth|session|password   cumplimiento_Regla  modulo_PAM_ejecuta_regla  args
+			  
+			  optional|required|requisite  
+			 (opcional= no obligatorio su cumplimiento,
+
+			  required= se aconseja su cumplimiento si no es asi
+				 se manda mensaje de error y se siguen validando
+				 las reglas
+
+			 requisite= oblitario  su cumplimiento, si no se cumple
+				se manda mensaje de error y NO SE SIGUEN proce
+				sando reglas)
+
+		       si quieres especificar en la regla
+			las condiciones q han de cumplirse:
+
+			[variable=valor variable=valor...]
+
+ej: reglas de login.service:
+
+	auth       optional   	pam_faildelay.so  	delay=3000000
+	----	   --------   	----------------  	-------------
+ regla para      es opcional     modulo		  	argumento de pam_faildelay
+ control      			(para cada
+ autentificacion		modulo, pags.man)
+
+
+
+	auth       requisite  		pam_nologin.so
+	----	   --------   		----------------  
+ regla para      es obligatoria  	modulo q comprueba en fichero /etc/nologin
+ control      			 	si existe un usuario y le deniega acceso
+ autentificacion		
+
+
+esta regla es la q controla el acceso de los usuarios a nuestro sistema y 
+no son denegados por pam_nologin:
+
+
+	auth		[success=1 
+			default=ignore]   			pam_unix.so nullok_secure
+	----	   	--------   				------------  
+ regla para      	solo controla la variable	 	este modulo coge login + passw
+ control      		"success" (el valor lo da		y la chequea en almacen de 
+ autentificacion  	el modulo pam_unix si al aut. 		credenciales
+			es o no ok:
+		  	si es ok---> success=1 
+			y no sigue mas reglas
+		  	si no ok ---> sucess<>1
+		  	y sigue con reglas
+
+
+----------------------------------------------------------------------------
+ALMACEN DE CREDENCIALES DE USUARIO de login.service por defecto definido por
+pam_unix.so
+----------------------------------------------------------------------------
+el servicio LOGIN comprueba las credenciales en:
+
+	/etc/passwd   : fichero de cuentas de usuario
+			cada linea en este fichero define una cuenta de usuario
+			y el formato de cada linea
+
+_login_ : x : uid : gid : comentarios : direct_personal : shell_inicio_sesion
+	      ---
+		\--> usuarios q pueden iniciar sesion normalmente 
+		   cuentas normales (uid >=1000)
+
+
+
+
+	/etc/shadow : fichero de hashes de las passwords de los usuarios
+			y solo puede tener acceso el root; cada linea
+			representa la informacion de la password de un usuario
+
+
+
+ _login_: *|hash : .... <--- informacion sobre la contraseña (vigencia en dias,
+			   expiracion, ...:  man shadow)
+
+
+
+el servicio login.service:
+
+	login del usuario + password q ha introducido
+			    -------------------------
+					\-->saca el hash
+ 				comprueba si coincide con el hash q hay
+				en /etc/shadow para el login. Si OK
+				del fichero /etc/passwd saca:
+
+					-directorio personal
+					-shell del usuario	
+
+
+en el fichero: /etc/login.defs
+ se pueden configurar opciones de las cuentas de los usuarios.
+
+Una vez q el servicio login.service accede al directorio personal del usuario
+carga este fichero:
+
+	.bashrc <---- fichero de configuracion del entorno del usuario
+			para mirar variables de entorno
+			ejecutas:  "set"
+
+
+
+---------------------------------
+COMANDOS GESTION CUENTAS USUARIOS
+---------------------------------
+1.crear cuentas de usuario
+
+  useradd [-opciones cuenta] nombre_crear
+          ------------------
+		\-->
+			-d /ruta/directorio ----> si no pones esta opcion
+						la va a crear en /home
+			-m  (si no existe el directorio personal lo crea)
+
+			-c "comentarios" ----> aÃ±adir comentarios
+			-s /ruta/shell -----> ruta a la shell para la cuenta
+					si no pones, aÃ±ade /bin/bash
+			-g nombre_grupoPPAL ---> grupo ppal al cual pertenece
+						el usuario, sino lo pones crea
+						un grupo con el mismo nombre
+			-G grupo1,grupo2,...
+			-u numero_uid -----> numero de uid a la cuenta
+			-e fecha_caducidad ---> fecha de caducidad de la cuenta
+						en formato YYYY-MM-DD
+
+
+	ej:
+		useradd -c "..cuenta prueba..."
+			-s /bin/bash
+			-g root
+			-u 9000
+			prueba
+
+
+para aÃ±adir una password a la cuenta:
+
+	1Âº) el comando:  passwd nombre_cuenta 
+	  cambia la contraseÃ±a de forma interactiva
+
+	2Âº) si quieres pasarle la contraseÃ±a sin q te la pida: chpasswd
+	y se lo tienes q pasar asi    nombre_cuenta:password
+
+
+		echo "nombre_cuenta:password" | chpasswd
+
+-----------------------------------------------------
+practica:
+	- crear una nueva cuenta llamada:  practica
+	comentario: "cuenta de practicas de sistemas"
+	uid: 9999
+	grupo principal: adm
+	grupos secundarios: users,sudo
+	shell: /bin/bash
+	password: 123456AbC
+
+	- comprobar q existe en /etc/passwd
+	- comprobar q existe el hash en /etc/shadow
+	- iniciar sesion con la cuenta en otro terminal
+-------------------------------------------------------
+useradd -m -u 9999 -g adm -G users,sudo -s /bin/bash practica
+echo "practica:123456AbC" | chpasswd
+grep -e "^practica:x:" /etc/passwd
+grep -e "^practica:" /etc/shadow
+su practica <-------------para salir: exit
+
+
+
+
+2. para modificar datos de una cuenta:
+
+	usermod [-opciones] nombre_cuenta
+		-----------
+			\---> las mismas q en useradd
+
+ej: en cuenta anterior voy a cambiar el uid=8000 y el grupo ppal a "root"
+
+	usermod -u 8000 -g root practica
+
+   para comprobarlo:
+	grep -e "^practica:x:" /etc/passwd <--- cambia el uid de 9999 a 8000
+						y el gid del grupo ppal cambia
+						del admin=4  al root=0
+
+
+
+3. para borrar una cuenta de usuario:
+
+	userdel [-opciones] nombre_cuenta
+		-----------
+		   \---> -f  fuerza la elminacion de la cuenta
+			 -r  borra el directorio personal
+
+  ej: para borrar la cuenta anterior:
+
+		userdel -f -r practica
+
+-------------------------------------------------------------------------
+		COMANDOS GESTION DE GRUPOS
+-------------------------------------------------------------------------
+Comandos para gestion de grupos ( usan ficheros: /etc/group     /etc/gshadow)
+	
+	groupadd  --> crear grupo nuevo
+	groupmod  --> modificar un grupo de users
+	groupdel  --> borrar un grupo de users
+	gpasswd  --> añadir o modificar la contraseña del grupo
+	groups  --> imprime los grupos en los que está un usuario
+	newgrp  --> un usuario cambia su grupo principal. El usuario que ejecute
+	            este comando puede pertenecer o no al grupo en cuestion.
+
+PRTACTICA GESTION GRUPOS Y USUARIOS
+-----------------------------------
+crear un grupo 1DAM ---> gid 5000, password grupo: DAMvesp
+ añadir usuarios : damt1, damt2, damt3 (passwords las mismas que los logins,
+ grupo ppal 1DAM, secundatio: ALUMNOS)
+	administrador del grupo: profeSistemas(password la misma que el login,
+						ppal PROFESORES)
+
+crear otro grupo ALUMNOS --> gid 6000, password grupo: ALUMNOSavellaneda
+añadir usuarios: damt1, damt2, damt3   (  HACER TODO ESTO COMO ROOT )
+
+1) en una terminal iniciar sesion con: damt1 
+(comprobarlo con comando: id) <---- te tiene que salir grupo ppal 1DAM	
+
+  cambiar al grupo ALUMNOS <--- comprobar que estais en grupo ALUMNOS
+
+
+2) en otra terminal iniciar sesion con: profeSistemas
+ (comprobarlo con comado: id) 
+
+  - como eres el administrador del grupo 1DAM, sacar la lista de usuarios del grupo.
+  - echar del grupo a damt1 ( ir a consola 1º donde estas con usuario damt1 y ver si puede ingresar al grupo 1DAM de nuevo)
+  - te creas un fichero en /tmp <--- llamado: "APUNTES_SISTEMAS.txt"
+      miras permisos fichero: ls -l /tmp/APUNTES_SISTEMAS.txt
+      te tiene que salir algo asi: -rw-r--r--  profeSistemas PROFESORES APUNTES_SISTEMAS
+  - cambiamos el grupo propietario al cihero:
+	chown profeSistemas: 1DAM /tmp/APUNTES_SISTEMAS.txt
+  - cambiamos permisos al fichero:
+	chmod g+w,o-rwx
+  - en terminal 1 con usuario "damt1" (no debe pertenecer al grupo 1DAM)
+    intenta ver el contenido del fichero /tmp/APUNTES_SISTEMAS.txt ¿ te deja ?
+
+en terminal 1 cambia a usuario "damt2" con su...ahora con este usuario ¿ te deja ?
+(si deberia xq pertenece al grupo 1DAM)
+
+
+3º) en otra terminal como root:
+  
+  - ver a que grupos pertenece el usuario damt1, damt2, damt3
+  - quitar de "administrador" al usuario profeSistemas del grupo 1DAM (vas a terminal
+    2 donde estas como "profeSistemas" e intentas sacar del grupo 1DAM al usuario damt2 ¿ te deja ?.
+
+
+
+notas permisos numericos CHMOD:
+
+   u     g      o
+  rwx   rwx    rwx          
+   |      |      |        0 0 0 0 0 1 1 1= (2^2)*1 + (2^1)*1 + (2^0)*1
+  111   111    111	  - - - - - - - - 
+  ---   ---    ---        7 6 5 4 3 2 1 0 posicion
+   7      7     7         2 2 2 2 2 2 2 2 base binaria
+
+
+
+   u     g      o
+  rw-   r--    ---          
+   |      |      |
+  110   100    000         chmod 755 LEEME.txt
+  ---   ---    ---         chmod u=rwx,g=r-x,o=r-x LEEME.txt
+   6     4      0      
+
+  u     g      o
+  rwx   rw-    rw-          
+   |      |      |
+  111   110    110          
+  ---   ---    ---
+   7     6      6 
+

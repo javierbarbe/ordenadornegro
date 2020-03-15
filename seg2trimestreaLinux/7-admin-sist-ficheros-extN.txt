@@ -1,0 +1,157 @@
+-----------------------------------------------
+ ESTRUCTURA DE SIST.FICHEROS EXT4(ext-n) LINUX
+-----------------------------------------------
+cuando formateas una particion de un dispositivo en linux creas
+un sistema de ficheros ext4 (formado por un conjunto de grupos bloque)
+
+	32768bloq	 32768bloq      ===> la ud.almacenamiento bloq=4096bytes
+	 (128M)		  (128M)		    (como un cluster en win$)
+     <---------------> <--------------> ...
+--------------------------------------------------
+ pbs | grupo-bloque-0 | grupo-bloque-1 | .....
+grub |		      |                |
+---------------------------------------------------
+	  |
+	  |---> cada grupo bloque
+		se estructura asi:
+
+	1bloq	N-bloq	  1bloq	   1bloq     N-bloq   1bloq   1bloq
+	----------------------------------------------------------------
+       super | tabla    | bitmap  | bitmap | tabla  | bloque|bloque| ...
+       bloque| descript | bloques | inodos | inodos |  datos| datos|
+	       grupos   | datos   | 	   |	    |  1    | 2	   |
+	------------------------------------------------------------------
+( ver imagen ext4 creacion de imagen en disco.jpg)
+
+toda esta estructura se repite en cada grupo-bloque en ext2, sin embargo
+en ext3 cada dos grupos-bloque (grupo-bloque-0,grupo-bloque-2,...) y en ext4
+en grupo-bloque-0 y grupo-bloque-N
+
+ - el superbloque es esencial pq guarda la informacion de todo el sistema de
+  ficheros: cuantos grupos-bloques hay en la particion, lo q ocupa cada uno,
+  cuantos inodos hay, tamaÃ±o de cada inodo, ...
+
+	para ver la info del superbloque:
+
+		dumpe2fs -h /dev/sda1 <----te muestra la info del superbloque
+					del grupo-bloque-0 (la q usa actualmente
+					el sist.ficheros)
+
+
+   Â¿cuantos grupos-bloques hay en la particion /dev/sda1 si ocupa 992Gb?
+   cada grupo-bloque ocupa 128M
+		992 Gb* 1024 Mb/Gb
+		--------------------- = 7936 grupos-bloque
+			128Mb/grupo
+
+   para ver toda la info de los grupos-bloque (quita opcion -h)
+
+		dumpe2fs /dev/sda1
+
+
+ - la tabla descriptora de grupos bloque es una "tabla" donde cada fila 
+  (grupo de 32bytes) define la estructura de cada grupo bloque:
+
+	inicio Tabla descriptora grupos
+	------------------------------
+	32bytes <----- grupo-bloque-0
+	32bytes <----- grupo-bloque-1
+	32bytes <----- grupo-bloque-2
+
+
+  - bitmaps de bloques e inodos, ocupan 1bloq cada una (4096 bytes)
+   indica si esta libre o ocupado el bloque de datos o inodo en ese grupo
+ 
+    bitmap de bloques de datos
+    1 1 1 0 1 1 1 1 0 1 1 1 1 ....
+    | |----bloque de datos 2 ocupado ...
+   bloque
+   de datos 1
+   ocupado 
+
+ Â¿Â¿q es un inodo?? un inodo representa la unidad "logica" de almacenamiento
+ de la informacion, es decir:
+
+	un fichero -----> inodo
+ 	un directorio -->inodo
+
+ en un inodo tenemos:
+	- metadatos del fichero/directorio (usuario prop, grupo prop, nombre,
+	  fechas de creacion, modificacion y acceso, ....)
+
+	- punteros a los bloques de datos donde esta el contenido del fichero
+ 	o directorio. Estos bloques de datos se llaman EXTENTS 
+
+
+para ver numero inodo de un fichero/directorio:
+
+		ls -i /ruta/fichero
+
+para ver metadatos inodo:
+
+		stat /ruta/fichero
+
+para ver todo el inodo (metadatos + extents):
+
+		debugfs -R "stat /ruta/fichero" /dev/particion_linux_ext4
+
+
+ej:  inodo fichero /etc/passwd ---> ls -i /etc/passwd
+     metadatos inodo /etc/passwd--> stat /etc/passwd
+     todo el inodo de /etc/passwd--> debugfs -R "stat /ruta/fichero" /dev/sda1
+				     debugfs -R "imap numero_inodo" /dev/sda1
+
+extents de datos del fichero: (0) 107311157
+			       |  --------->numero de bloque donde esta el cont.
+			ocupa un bloque de 4096bytes
+
+
+------------------------------------------------------
+   COMANDOS PARA ADMINISTRAR SIST.FICHEROS
+  pero a nivel LOGICO (admin ficheros y directorios)
+-------------------------------------------------------
+cualquier dispositivo en linux debe ser "montado" para poder acceder a su
+contenido. El comando "mount" sirve para esto (sin opciones te muestra todos los
+dispositivos montados:  dispositivo  /ruta   tipo_sist_ficheros   opciones)
+Para ver mejor esta info de mount, con "findmnt" se muestra en forma de arbol
+
+
+Para montar un disp:
+
+   mount [-opciones] /dev/dispositivo  /ruta/montar
+				       -------------
+					\---> el servicio "udev-daemon"
+					automonta dispositos en 
+					/media/<usuario>/<uid_dipositivo>
+
+
+ ej: quiero montar usb reconocido como /dev/sdb1 en directorio 
+     /mnt/miusb:
+
+	mount -t ntfs -o rw,noexec,user /dev/sdb1 /mnt/miusb
+
+
+ ej: montar un fichero .iso para ver/modificar contenido. Â¿Â¿como montas
+   el contenido de un fichero .iso?? asociandolo a un LOOP-DEVICE
+
+    losetup <---- sirve para asociar un fichero a un loop-device
+		la opcion -a o -l te lista los q estan en uso
+		la opcion -f te muestra el 1Âº libre
+
+    losetup /dev/loopNÂº  /ruta/fichero
+    
+    voy a asociar la iso de UbuntuServer al /dev/loop3
+
+    	losetup   /dev/loop3    /home/_Neo_/Descargas/UbuntuServer_18.iso
+ 
+     monto el contenido en un directorio llamado "imagenISO" (debe existir):
+
+	mount /dev/loop3  /mnt/imagenISO
+			  ---------------
+				\---> aqui esta el contenido de la imagen
+
+
+   despues proceso contrario para desmontar imagen y desasociar disp.virtual:
+
+	umount /mnt/imagenISO
+        losetup -d /dev/loop3

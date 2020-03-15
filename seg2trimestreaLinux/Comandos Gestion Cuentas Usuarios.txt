@@ -1,0 +1,336 @@
+						5/02/2020
+--------------------------------------------------------------------------------------
+	COMANDOS GESTION CUENTAS USUARIOS
+--------------------------------------------------------------------------------------
+
+1. Crear cuentas de usuario: solo puede crear cuentas el administrador (root). 
+adduser- no vale para todos los linux (sólo Ubuntu)
+
+useradd [-opciones cuenta] nombre _crear
+              ------------------------
+	           \ - - >
+	-d /ruta/directorio - - - > si no pones esta opción la va a crear en /home
+		
+	-m (si no existe el directorio personal lo crea)
+
+	-c "comentarios" - - - >  añadir comentarios
+		
+	-s /ruta/shell - - - > ruta a la shell para la cuenta si no pones, añade /bin/bash
+
+	-g nombre_grupoPPAL - - - > grupo ppal al cual pertenece el usuario, sino lo pones crea un grupo con el mismo nombre
+
+	-G grupo1, grupo2,...
+
+	-u numero_uid - - - > número de uid a la cuenta (personal)
+
+	-e fecha_caducidad - - - > fecha de caducidad de la cuenta en formato YYYY-MM-DD
+
+-p crcp la tienes que pasar a contraseña hasheada, cifrada, no usar opcion -p
+
+ej: sudo su
+	useradd -c "..cuenta prueba.."
+	              -s /bin/bash
+	              -g root
+	              -u 9000 	--> uid 9000:0 grupo 0 es de administradores
+ 		prueba
+
+¿Cómo le pongo contraseña a la cuenta?
+sudo su bash
+grep -e "^prueba:" /etc/shadow
+devuelve: prueba !:18297:0:99999:7:::
+
+exit
+passwd
+
+PARA AÑADIR UN PASSWORD A LA CUENTA
+ 1º) El comando: passwd nombre_cuenta
+       cambia la contraseña de forma interactiva
+ 2º) Si quieres pasarle la contraseña sin que te la pida: chpasswd y se lo tienes que pasar así:
+nombre_cuente: password
+echo "nombre_cuenta: password" | chpasswd
+
+*****
+echo "prueba:As1234" | chpasswd
+grep -e "^prueba:" /etc/shadow
+--> y ya estaria habilitada
+
+¿como inicio sesion con un usuario?
+abro una terminal nueva
+quiero cambiar de _Neo_ a _prueba_
+su prueba
+Contraseña: As1234
+para salir de prueba hago exit y estas con neo 
+id --> te dice con el usuario que estas logeado 
+si no pones la opcion -d te lo crea el solo 
+*****
+
+PRACTICA:
+----------------------------------------
+ Crear una nueva cuenta llamada: práctica
+ Comentario: "Cuenta de prácticas de sistemas"
+ Uid: 9999
+ Grupo principal: users
+ Grupos secundarios: users, sudo
+ Shell: /bin/bash
+ Password: 123456AbC
+ 
+ - Comprobar que exite en /etc/passwd
+ - Comprobar que exite el hash en /etc/shadow
+ - Iniciar sesión con la cuenta en otro terminal
+
+SOLUCIÓN: comandos de consola
+----------------------------------------------
+useradd -m -u 9999 -g adm -G users, sudo -s /bin/bash practica
+echo "practica:123456AbC" | chpasswd
+grep -e "^practica:x:" /etc/passwd
+grep -e "^practica:" /etc/shadow
+su practica <--- para salir: exit
+
+--------------------------------------------------------------------------------------------------------------------
+2. Para modificar datos de una cuenta:
+    (la cuenta tiene que existir)
+	
+	usermod [-opciones] nombre_cuenta
+	  	-------------
+		       \--> las mismas que en useradd
+	(de los pocos comandos que comparten opciones)
+
+ej: en cuenta anterior voy a cambiar el uid=8000 y el grupo ppal a "root"
+ 	
+	usermod -u 8000 -g root practica
+
+para comprobarlo:
+	grep -e "^practica:x:" /etc/passwd <- - cambia el uid de 9999 a 8000 y el gid del grupo ppal cambia del admin=4 al root=0.
+
+3. Para borrar una cuenta de usuario: (borra sin piedad, no pregunta).
+
+	userdel [-opciones] nombre_cuenta
+	             --------------
+		     \--> 	-f (force) fuerza la eliminación de la cuenta
+			-r borra el directorio personal
+
+ej: para borrar la cuenta anterior:
+	
+	userdel -f -r practica
+
+-r es para borrar el directorio personal, que linux si no lo pone te deja el directorio personal de esa cuenta para hacer un backup
+Si borras la cuenta pero no borras el directorio (no pones -r) no podrias recuperar la cuenta, solo los archivos del directorio. 
+
+: <<EOF
+	script administración cuentas de usuario
+		GESTION CUENTAS
+		---------------------------
+		1. Crear nueva cuenta
+		2. Modificar cuenta existente
+		3. Borrar cuenta existente
+		4. Cambiar password cuenta existente
+		5. ---salir---
+
+	en opcion 1 pedir: comentarios, shell, uid, grupo principal, grupos
+	en opcion 2 pedir: que modificar y el valor a modificiar
+	en opcion 3 pedir: si quieres borrar o no el directorio personal
+	en opcion 4 pedir: la password, reintroducir la password, las tienes que ver y comprobar que coinciden, y si coinciden cambiarlas
+		(tienen que coincidir, sin usar passwd)
+
+EOF
+
+---------------------------------------------------------------------------------------------------07/02/2020-----------------
+	COMANDOS GESTION GRUPOS
+	--------------------------------------------
+
+Comandos para gestion de grupos (usan ficheros: /etc/group   /etc/gshadow)
+
+	groupadd
+	groupmod
+	groupdel
+	gpasswd
+	chgpasswd
+	groups
+	newgrp
+
+	PRÁCTICA GESTIÓN DE GRUPOS DE USUARIOS
+	-------------------------------------------------------------------
+
+Crear un grupo 1DAM ---> gid 5000, password grupo: DAMvesp
+ añadir usuarios: damt1, damt2, damt3 (passwords las mismas que los logins, 
+				grupo ppal 1DAM, secundario: ALUMNOS).
+
+ administrador del grupo: profeSistemas (password la misma que el login, grupo ppal PROFESORES). 
+
+Crear otro grupo ALUMNOS ---> gid 6000, password grupo: ALUMNOSavellaneda
+ añadir usuarios: damt1, damt2, damt3.
+
+--estos pasos anteriores hay que hacerlos como root, sino no te deja--
+
+1º) En una terminal iniciar sesion con: damt1
+ (comprobarlo con comando: id <--- te tiene que salir grupo ppal 1DAM) 
+	
+-cambiar al grupo ALUMNOS (comando para cambiar al grupo alumnos) <--- comprobar que estáis en grupo ALUMNOS
+ (Hay que abrir varias pestañas, en distintas pantallas de consola) 
+
+2º) En otra terminal iniciar sesion con: profeSistemas
+ (comprobarlo con comando: id) 
+
+- Como eres el administrador del grupo 1DAM, sacar la lista de usuarios del grupo.
+
+- Echar del grupo a damt1 (ir a consola 1º donde estás con usuario damt1 y ver si puede ingresar al grupo 1DAM de nuevo)
+
+- Te creas un fichero en /tmp <--- llamado: "APUNTES_SISTEMAS.txt"
+ miras permisos fichero: ls -l /tmp/APUNTES_SISTEMAS.txt
+ te tiene que salir algo así: 
+cuando haces un ls:	
+	-rw-r--r-- profeSistemas PROFESORES APUNTES_SISTEMAS
+			        --------------------
+			grupo principal de pofeSistemas
+
+ cambiamos el grupo propietario al fichero: 
+
+	chown profeSistemas: 1DAM /tmp/APUNTES_SISTEMAS.txt
+ 
+ cambiamos permisos al fichero:
+
+	chmod g+w, o-rwx /tmp/APUNTES_SISTEMAS.txt
+ (hemos quitado los permisos a cualquier usuario que no pertenezca al grupo -rw-r--r--)
+
+chwn --> change owner
+
+ - En terminal 1 con usuario "damt1" (no deb pertenecera al grupo 1DAM)
+ (si pertenece, hay que quitarle)
+ intenta ver el contenido del fichero /tmp/APUNTES_SISTEMAS.txt ¿te deja? 
+
+ en terminal 1 cambia a usuario "damt2" con su ... ahora con este usuario ¿te deja?
+ (si debería porque pertenece al grupo 1DAM)
+
+3º) En otra terminal como root: 
+
+- ver a que grupos pertenece el usuario damt1, damt2, damt3
+- quitar de "administrador" al usuario profeSistemas del grupo 1DAM
+ (vas a terminal 2 donde estás como "profeSistemas" e intentas sacar del grupo 1DAM al usuario damt2 ¿te deja?)
+
+ Volverle a hacer administrador del grupo, ¿te deja ahora?
+
+
+-------------------
+-l --> en cualquier fichero y cualquier directorio: devuelve permiso, enlaces, usuario propietario, grupo propietario, fecha
+(echo "hola mundo" )
+-rw-r--r--
+- <--fichero normal
+d <--directorio  (drwxr-xr-x)
+rw <- permisos para usuario
+r-- <- permisos para grupo de usuarios
+r--<- permisos restos de usuarios
+
+para cambiar los permisos uso: chmod 
+lo puedo hacer en el formato que tengo o en formato humano 
+ej: chmod u: ,g: ,o: PRUEBA.txt
+u<- permisos usuario
+g<- permisos grupos
+o <- permisos restos de usuarios
+
+Me da igual los que tenga, doy estos permisos
+------------------------------------------------------------
+u <- Al usuario, lectura y escritura.
+Al resto del grupo al cual pertenecen igual
+Al resto de usuarios, todos. 
+x - ejecutar (no tiene sentido en fichero de texto )
+
+-rwxrw-rwx 1 _Neo_ _New_ 11 feb 7 17:31 PRUEBA.txt
+
+partiendo de los q tiene quiero añadir o quitar:
+--------------------------------------------------------------
+chmod u-x, g+x, o-rwx PRUEBA.txt
+u <-- quito ejecución
+g <-- añado ejecución
+o <-- quito todos 
+
+- rw-rwx--- 1 _Neo_ _Neo_ 11 feb 7 17:31 PRUEBA.txt
+quito al grupo tambien el de ejecución:
+
+chmod g-x PRUEBA.txt
+ls -l PRUEBA.txt
+
+añadir a todos el de ejecución
+----------------------------------------------------------------
+chmod u+x,g+x,o+x PRUEBA.txt
+chmod a+x PRUEBA.txt
+ls -l PRUEBA.txt
+
+para todo el mundo solo lectura
+chmod a=r PRUEBA.txt
+ls -l Prueba.txt
+-r--r--r-- 1 _Neo_ _Neo_ 11 feb 7 17:31 PRUEBA.txt
+---------------------------------------------------------------------------
+
+	NOTAS PERMISOS NUMÉRICOS CHMOD:
+	---------------------------------------------------------
+
+	   u     g      o
+ 	rwx   rwx    rwx          
+	   |         |        |        		0 0 0 0 0 1 1 1  	= (2^2)*1 + (2^1)*1 + (2^0)*1
+	 111   111    111	  	-  -  -  - -  -  - - 
+		  ---    ---      ---        		7 6 5 4 3 2 1 0 posicion
+	   7      7       7         		2 2 2 2 2 2 2 2 base binaria
+
+
+
+	   u     g      o
+	rw-   r--    ---          
+	   |       |       |
+	110  100  000         		chmod 755 LEEME.txt
+ 	 ---   ---    ---        		 chmod u=rwx,g=r-x,o=r-x LEEME.txt
+ 	  6     4      0      
+
+	  u     g      o
+	rwx   rw-   rw-          
+	   |      |        |
+	111  110   110          
+	---   ---    ---
+	 7     6      6 
+
+
+Los numeros salen al pasar de binario a decimal, es como de derecha a iquierda..... dos elevado a 0 a 1 a 2. 
+Mirar video youtube. 
+---------------------------------------------------------------------------------------------------------------------------------------------	
+
+id
+whereis gpasswd
+sudo gpassWd _Neo_
+
+
+batch mode - en formato script, sin q pregunte
+man chgpasswd
+echo "_Neo_:" | chpasswd
+
+read -p "password grupo_" pasgr
+read -p "retype password grupo_" repasgr
+test $pasgr = $repasgr
+test $pasgr = $repasgr && echo "guay" 
+
+Para ponerlo que si coinciden la cambias
+-----------------------------------------------------
+test $pasgr = $repasgr && echo "_Neo:$pasgr" | chgpassd || echo "malllllllllllllll no coinciden"
+ 					------------		----------------------
+				   devuelve si esta bien 	devuelve si esta mal
+
+--------------------------------
+
+useradd -g 1DAM dam1; echo "damt1:damt1" | chpasswd
+(y esto se hace tres veces)
+
+se puede hacer un bucle, y hacer los 3 usuarios de golpe:
+---------------------------------------------------------------------------
+for ((a=1; a<=3; a++)); do useradd -g 1DAM -G ALUMNOSdamt$a; "damt$a:damt$a" | chpasswd done
+
+Los bucles en linux se cierran con 'done' al
+G - grupo secundario 
+g - grupo principal 
+user add--help : hay nos muestra todos los comandos de ayudas.... 
+
+----------------
+
+su _nombre_usuario - para acceder a un usuario
+
+
+
+  
+ 

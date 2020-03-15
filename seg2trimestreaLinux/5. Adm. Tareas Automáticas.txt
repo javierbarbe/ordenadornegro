@@ -1,0 +1,173 @@
+							07/02/2020
+
+------------------------------------------------------------------------------------------
+	ADMINISTRACIÓN DE TAREAS AUTOMÁTICAS
+------------------------------------------------------------------------------------------
+
+En Linux el servicio encargado de la programación de tareas automáticas se llama "cron"
+
+	systemctl status cron.service <--- estado del demoio cron.service debe estar activo porque se lanza en el arranque
+
+El fichero de configuración:
+
+	systemctl cat cron.service
+
+--copiar de txt de Pablo--
+
+Funcionamiento del demonio cron
+--------------------------------------------
+Cada minuto testea en busca de tareas cron (tarea programada por cron) llamadas "crontabs" files (ficheros crontab).
+1 fichero crontab contiene varias tareas prograadas cron.
+
+	Hay dos tipos:
+ - crontab del sistema <--- /etc/crontab <-- En este fichero están todas las tareas prograadas del sistema operativo, a las que solo tiene acceso el "root". 
+
+SHELL=/bin/sh
+PATH
+......COPIAR PABLO.........
+
+Cada línea es una tarea. 
+
+ - crontabs de los usuarios: <---/var/spool/cron/crontabs 
+			      \--> _usuario_1
+			             _usuario_2
+				. . .
+Por cada usuario se crea un fichero contab con el nombre del usuario en el directorio /var/spool/cron/crontabs. 
+	
+Cada usuario puede ejecutar las tareas programadas que quiera.
+Por cada usuario hay un fichero. 
+Permiso de ejecución: no lo puedes ver nada dentro de el ni ejecutarlo. 
+
+Formato de cada tarea programada cron dentro de un crontab file
+-------------------------------------------------------------------------------------
+El formato de cada línea es: 
+
+programación de la tarea
+---------------------------------
+ # m h d m d u | command
+
+# min horas diasMes Mes diaSemana User ComandoQueQuieresEjecutar con cron.service
+
+¿Esto es cuando quieres que se ejecute la tarea?
+
+ min = en que minuto quieres que se lance la tarea. Puede admitir un rango de valores de 0 a 59 minutos y valores individuales separados por ',' y rangos con intervalos: inicio-final/intervalo:
+	0-30/3
+si quieres establecer un rango, lo separarias con una coma. Tambien puedes poner un punto con intervalos, en esta hora y media cada 15' por ejemplo.
+
+ horas = en hora quieres que se lance la tarea (* cualquier hora, admite rangos de 0 a 23, valores individuales,..... -igual que los minutos.....)
+
+ diasMes = en que día del mes quieres que se ejecute la tarea (* cualquier dia del més, admite valores de 1 a 31, con rangos...)
+
+ Mes = en que mes quieres que se ejecute la tarea (* cualquier mes, admite valres de 1 a 12...)
+
+ diaSemana = que día de la seman aquieres que se ejecute la tarea (* cualquier día de la semana, y admite valores 0 a 7, el 0 y el 7 es domingo).
+
+ * <-- quiere decir en todos
+
+Ej:
+	# min horas diasMes Mes diaSemana User Comando
+	
+	     *     */2    1,15,30   */3         1-5           ...          ....
+	   0,30   23       30         *          Sun      
+ 	    5      16-20     *         *          Mon-Fri
+
+
+
+
+ANACRON - complemento de CRON
+-----------------------------
+anacron es un ejecutable q cuando se le invoca lo q hace es mirar su
+fichero de tareas "anacron-crontab"(anacrontab) y ejecutarlas una a una
+en funcion de su programacion. La diferencia con CRON es q no hace falta q
+este en funcionamiento las 24h del dia como el demonio de cron
+
+ANACRON tb ejecuta tareas programadas pero solo las ejecuta diriamente,
+semanalmente o mensualemente
+
+ el fichero de tareas anacron ---> /etc/anacrontab
+cada linea del fichero define una tarea ANACRON (excepto las q definen
+variables de entorno para las tareas)
+
+	funcionamiento:
+
+ cuando se lanza el ---------> consulta un fichero de fechas definido
+ ejecutable (o se despierta    para cada tarea anacron, q estan en 
+ el demonio: anacron.service   /var/spool/anacron/
+ una vez al dia)
+				- si existe el fichero de fechas para esa
+			tarea, consulta la fecha de su interior y mira
+			si es mas antigua q la programacion q tiene la 
+			tarea en (dias,semanas,meses) en columna periodo
+
+			ej: tarea:  cron.daily --->/var/spool/anacron/cron.daily
+						   ----------------------------	
+							contenido: 20200211
+			anacron lanzo esta tarea la ultima vez el 11-2-2020
+			como la tarea se ejecuta con un periodo: 1dia, si
+			la fecha de hoy es: 11-2-2020 pues no se ejecutaria
+			si fuese anterior, si se ejecutaria.
+
+			si se tiene q ejecutar deja pasar un retraso de 5min
+			(valor de la columna retraso para la tarea)
+
+			- si no existiese el fichero de fechas para esa tarea
+			la ejecuta de forma inmediata y crea el fichero de 
+			fechas para la misma
+
+------------------- fichero de tareas anacron: /etc/anacrontab --------
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+HOME=/root
+LOGNAME=root
+
+#periodo retraso  id-tarea	comando
+1	  5	 cron.daily	run-parts --report /etc/cron.daily
+7	  10	cron.weekly 	run-parts --report /etc/cron.weekly
+@monthly  15	cron.monthly	run-parts --report /etc/cron.monthly
+3	  30	backupDocum	/bin/bash /home/neo/crearBackup.sh
+
+(el formato de las tareas anacron ---> man anacrontab)
+
+ ----------------------------------------------------------------------
+
+ puedes forzar la ejecucion de las tareas anacron mediante linea de comandos
+como root: (ver opciones: man anacron)
+
+		anacron -f -u 
+
+
+
+
+
+
+
+
+----------------
+nano <--- modificas o creas
+cat crontab (metiendote como root)
+'-' de lunes a viernes
+',' solo lunes y viernes
+run-parts : ejecuta todos los ejecutables que haya en su interior 
+-x si tiene el permiso de ejecución ese fichero se ejecuta y sino no
+
+anacron levanta tareas que cron no puede. 
+command <-- poner la ruta al ejecutable
+path = <-- si no quieres meter la ruta ej: /ruta/mi servicio
+
+^x == control + salir
+
+como usuario normal si me quiero programar una tarea cron:
+
+crontab -e
+-------------
+hay no se pone usuario, por que todas estas tareas me pertenecen control+0 (guardar) control+x (salir)
+y lo compruebas
+crontab -l 
+history -- historial 
+exit -- te saca del usuario 
+
+
+cd /var/spool/cron/contabs/
+ls
+--------y aqui veriamos la nueva tarea
+

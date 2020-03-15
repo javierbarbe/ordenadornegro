@@ -1,0 +1,331 @@
+--------------------------------------
+ ADMINISTRACION DE SERVICIOS(DAEMONS)
+--------------------------------------
+un servicio es un programa q se lanza en segundo plano
+sin la interaccion del usuario (no tienen interfaz grafica)
+suelen lanzarse en el arranque por systemd o por init
+
+como crear un servicio para q pueda ser ejecutado
+(segun antiguo INIT)
+-------------------------------------------------
+Todos los servicios son un script, q se encuentran
+en este directorio:
+
+	/etc/init.d
+
+
+q se ejecutan con el interprete de comandos "sh" (mini-bash)
+(tienen q tener permisos de ejecucion)
+
+ej:	/etc/init.d/cron <---- servicio de programacion
+				de tareas automaticas
+
+	su contenido:  less /etc/init.d/cron
+
+			#!/bin/sh
+			...
+			case "$1" in
+			   "start").... ;;
+			   "stop").... ;;
+			    *)
+			       echo "mensaje ayuda"
+			       exit 0
+				;;
+			 esac
+
+ como es un script lo puedo ejecutar en linea de comandos:
+
+	 cd /etc/init.d
+	 ./cron status
+
+
+
+ ¿¿como lanza INIT (o systemd por compatibilidad) estos
+demonios ??
+--------------------------------------------------------
+Init funciona con RUNLEVELS, si quieres arrancar un servicio
+(o parar) en un determinado RUNLEVEL para q INIT lo arranque
+o lo pare, tienes q crear un "ENLACE SIMBOLICO"(soft-links)
+al script del demonio en el directorio del runlevel q quieres.
+
+  ej:
+	el demonio cron, el script esta /etc/init.d
+     se ejecuta en RUNLEVEL 5
+		   ----------
+			|
+		en directorio /etc/rc5.d
+		(directorio de configuracion del runlevel 5)
+
+  se crea un softlink al fichero del demonio:
+  /etc/init.d/cron con un nombre especial:
+		SxxNombre_Demonio ---> arrancar servicio
+		KxxNombre_Demonio ----> parar servicio
+		 --
+		  \--> xx=numero de orden q quieres q se
+			 arranque o pare el demonio
+
+   en mi caso, se llama: S03cron
+
+	ls -l /etc/rc5.d/S03cron
+
+   saldria:
+
+lrwxrwxrwx 1 ... 14 abr 25  2019 S03cron -> ../init.d/cron
+
+
+como crearnos un servicio segun antiguio init
+---------------------------------------------
+1º) nos creamos un script q queramos ejecutar como servicio
+2º) lo metemos con permisos de ejecucion en /etc/init.d
+3º) creamos un softlink a dicho fichero en el directorio
+   del RUNLEVEL donde quiero q se lance (por defecto, 
+   se aconseja en RUNLEVEL 5)
+
+    ln -s __nombre__enlace  fichero_al_q_apunta
+
+ ej:
+	ln -s /etc/rc5.d/S01miscript  /etc/init.d/miscript
+
+
+
+--------------------------------------------------
+como crear un servicio para q pueda ser ejecutado
+(segun SYSTEMD)
+-------------------------------------------------
+para systemd todo es una "unit" (unidad), los servicios son un tipo especial
+de unidad, llamada "service" (unit.service). Cada servicio se ejecuta en un 
+determinada unidad TARGET (se equiparaban a los antiguos runlevels de init)
+
+ hay un comando q controla las unidades de systemd, q es:  systemctl
+Para los servicios:
+
+	systemctl list-units --type=service <----te lista todas las unidades
+						de tipo "service" q controla
+						systemd (parados,ejecutandose,..
+
+  puedes filtrar por el estado:
+
+	systemctl list-units --type=service --state=active <---- lista de 
+							de servicios q estan
+							ejecutandose
+
+
+
+
+
+ ficheros de systemd q definen un servicio
+ -----------------------------------------
+ cada servicio tiene fichero asociado de nombre:  
+
+	nombre_servicio.service
+
+ y tiene q estar como minimo en el directorio: /lib/systemd/system
+
+
+
+
+ para ver las caracteristicas de un fichero de un servicio:
+
+	systemctl cat nombre_servicio.service
+
+  ej: para el servicio cron.service, si quiero ver el fichero de configuracion
+ del servicio:
+
+	systemctl cat cron.service
+
+
+ los ficheros de un servicio de systemd al menos tienen q tener 3 secciones
+ (man systemd.service <--- te explica el formato de los ficheros .service)
+
+ [Unit] <------------ las opciones aparecen: man systemd.unit
+  opcion=valor
+  opcion=valor
+  ...
+
+ [Service] <------- !!esta es obligatoria para definir un servicio!!
+ opcion=valor       las opciones aparecen en: man systemd.service
+ opcion=valor
+ ....
+ 
+ [Install] <-------- las opciones aparecen en: man systemd.exec
+ opcion=valor
+ opcion=valor
+ ...
+
+en [Service] se definen las caracteristicas basicas del servicio:
+opciones mas usadas:
+	Type=simple,oneshot,forkking,....<---si no pones nada, por defecto
+					lo crea "simple" (ejecuta el comando
+					del servicio y acaba el proceso del
+					servicio)
+
+		"oneshot" <---- igual q "simple" pero ejecuta varios comandos
+				a la vez y espera a su finalizacion antes de
+				lanzar systemd otras unidades (para ver si
+				acaba bien o no)
+
+		"forkking" <---- necesario cuando necesitas q tu el proceso
+				asociado a tu servicio se mantenga en background
+				o ejecutandose indefinidamente (fork = clonarse
+				en un proceso hijo asociado para escuchar)
+
+	Environment=VARIABLE=VALOR VARIABLE=VALOR  <---- variables q va a usar
+	EnvironmentFile=/ruta/fichero			el ejecutable del serv.
+
+	ExecStart=/ruta/ejecutableSErvicio arg1 arg2 ... <--ruta al ejecutable
+							del servicio 
+							!!!OBLIGATORIA!!!
+
+ ej: si quiero buscar todos los ejecutables de los servicios q hay
+   en systemd:
+
+	grep "ExecStart="  /lib/systemd/system/*.service
+
+
+=====================================================================
+
+ ej: contenido del fichero de servicio cron (programacion de tareas)
+
+[Unit]
+Description=Regular background program processing daemon
+Documentation=man:cron(8)
+
+[Service]
+EnvironmentFile=-/etc/default/cron
+ExecStart=/usr/sbin/cron -f $EXTRA_OPTS
+IgnoreSIGPIPE=false
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+ ej: contenido del fichero de servicio apache2 (servidor web)
+
+# /lib/systemd/system/apache2.service
+[Unit]
+Description=The Apache HTTP Server
+After=network.target remote-fs.target nss-lookup.target
+
+[Service]
+Type=forking
+Environment=APACHE_STARTED_BY_SYSTEMD=true
+ExecStart=/usr/sbin/apachectl start
+ExecStop=/usr/sbin/apachectl stop
+ExecReload=/usr/sbin/apachectl graceful
+PrivateTmp=true
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
+
+# /lib/systemd/system/apache2.service.d/apache2-systemd.conf
+[Service]
+Type=forking
+RemainAfterExit=no
+=======================================================================
+
+comandos para controlar el servicio:
+
+  ARRANCAR SERVICIO ---> systemctl start nombreServicio.service
+  PARAR SERVICIO ------> systemctl stop nombreServicio.service
+  ESTADO SERVICIO -----> systemctl status nombreServicio.service
+
+si quieres ver las dependencias del servicio:
+
+	systemctl list-dependencies nombresServicio.service
+
+
+
+COMO ARRANCA SYSTEMD LOS ANTIGUOS SERVICIOS INIT
+------------------------------------------------
+systemd no entiende el formato de los scripts de los servicios init, tiene
+q "wrappearlos" (envolverlos, traducirlos en algo q comprenda) en un formato
+de secciones q hemos visto
+
+  el encargado de hacer esto es:  systemd-sysv-generator
+  (ver paginas de manual:  man systemd-sysv-generator)
+
+servicio antiguo					servicio
+ INIT			systemd-sysv-generator  	SYSTEMD
+----------------     ------------------------------>
+/etc/init.d/servicio			/lib/systemd/system/servicio.service
+
+en /etc/rc5.d/enlaceServicio         y lo mete en el .target asociado a ese
+					runlevel
+
+
+
+
+
+
+------------------------------------------------------------------------------
+practica:  generar un servicio en systemd q escuche por el puerto 6666
+	q al conectarte a el te diga:
+
+	"Buenos dias, son las...."
+			     -----> fecha y hora del instante en q te conectas
+
+	ha de arrancarse en multi-user.target
+------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

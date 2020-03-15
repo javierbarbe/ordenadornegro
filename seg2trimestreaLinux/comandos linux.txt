@@ -1,0 +1,128 @@
+ps -p 1: para ver los procesos del sistema
+
+man systemd.specials
+
+man bootup
+
+cd /lib/systemd/system
+
+ll run*.target
+
+cd /usr/src
+
+uname -r ( kernel )
+
+--------------------------------------
+top : gestion de procesos
+
+ps : info de los procesos ejecutandose
+
+ps -e : info de los procesos mas detallada
+
+ps -p -f : info detallada del proceso
+
+pidof _nombre proceso_ : te devuelve noº PID
+
+pstree : muestra el arbol de procesos
+
+kill _PID_ : matar proceso o cambiar el estado de un proceso
+
+htop : misma info que top pero puedes interactuar con los procesos(F7 y F8 cambiar prioridad de los procesos)
+
+renice : altera la bondad de un proceso en ejecucion
+
+chrt : cambia de algoritmo un proceso en estado de ejecucion
+
+chrt -m : rango de prioridades de los algoritmos de un proceso
+
+less maps : diferentes librerias que va ausar el ejecutable en la RAM
+
+fg $numero_ejecucion_proceso = parar proceso
+
+bg %numero_ejecucion_proceso = para que se ejecute en segundo plano
+
+[] == test ---> el if evalua los [] y los [] evaluan lo que hay dentro de ellos ( poner [] y test es lo mismo )
+
+groupadd --> crear nuevo grupo
+
+groupmod  --> modificar un grupo de users
+	
+groupdel  --> borrar un grupo de users
+
+gpasswd  --> añadir o modificar la contraseña del grupo
+
+groups  --> imprime los grupos en los que está un usuario
+
+newgrp  --> un usuario cambia su grupo principal. El usuario que ejecute
+	            este comando puede pertenecer o no al grupo en cuestion.
+
+who --> Muestra los usuarios que ingresaron en el sistema y en qué terminal se encuentran
+
+whoami --> Muestra quién es el usuario que se está utilizando
+
+test -e _nombre_fichero : testa si existe ese fichero
+
+sed : edita no interactivo de ficheros desde consola ( provocar modificaciones , contenido de un fichero , conjunto de lineas ..) sed 's/"//g' status
+
+fdisk -l : listado de particiones
+
+parted /dev/sda print : te muestra info del disco duro 
+
+ls -i : numero de inodos de un fichero / directorio
+
+stat /ruta/fichero : metadatos inodo
+
+debugfs -R "stat /ruta/fichero" /dev/partition_linux_ext4 : ver todo el inodo
+
+losetup -f = ver disco virtual libre
+
+losetup -a = ver los discos virtuales ocupados
+
+losetup -d : desmontar imagen .iso del disco virtual
+
+
+alumnot@edhost:/var/lib/logrotate$ echo -e "..primera linea \n segunda linea \n tercera linea"
+..primera linea 
+ segunda linea 
+ tercera linea
+alumnot@edhost:/var/lib/logrotate$ echo -e "..primera linea \n segunda linea \n tercera linea" | while read linea
+> do 
+> echo " esta es la linea que estamos leyendo....$linea"
+> done
+ esta es la linea que estamos leyendo......primera linea
+ esta es la linea que estamos leyendo....segunda linea
+ esta es la linea que estamos leyendo....tercera linea
+
+
+alumnot@edhost:/var/lib/logrotate$ echo -e "..primera linea \n segunda linea \n tercera linea" | while read valor1 valor2; do  echo " esta es la linea que estamos leyendo....$valor1 $valor2"; done
+ esta es la linea que estamos leyendo......primera linea
+ esta es la linea que estamos leyendo....segunda linea
+ esta es la linea que estamos leyendo....tercera linea
+
+
+
+alumnot@edhost:/var/lib/logrotate$ read -p "introduce valores separador por un espacio en blanco:_" valor1 valor2
+introduce valores separador por un espacio en blanco:_hola 43q524523
+alumnot@edhost:/var/lib/logrotate$ echo $valor1
+hola
+alumnot@edhost:/var/lib/logrotate$ echo $valor2
+43q524523
+alumnot@edhost:/var/lib/logrotate$ read -p "introduce valores separador por un espacio en blanco:_" valor1 valor2
+introduce valores separador por un espacio en blanco:_holamundo
+alumnot@edhost:/var/lib/logrotate$ echo $valor2
+
+alumnot@edhost:/var/lib/logrotate$ $valor1
+holamundo: orden no encontrada
+
+
+
+
+for ((a=1; a<=3; a++)); 
+do 
+useradd -g 1DAM -G ALUMNOS damt$a; 
+echo "damt$a:damt$a" | chpasswd 
+done   --> crear los 3 usuarios a la vez 
+
+tail -f ( -f deja el fichero abierto pendiente )--> buscar x el fin de un fichero
+head --> buscar x el principio de un fichero
+logger -p (mandar mensajes al log)

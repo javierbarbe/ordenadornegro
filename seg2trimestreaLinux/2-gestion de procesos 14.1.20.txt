@@ -1,0 +1,350 @@
+----------------------------------
+  GESTION DE PROCESOS EN LINUX
+----------------------------------
+Un proceso es una estructura de datos q crea el modulo de 
+gestion de procesos del kernel para cualquier aplicacion
+q el usuario/sistema ejecute. En linux esta estructura de
+datos se llama BCP (block-control-process) y se puede ver
+en el fichero de codigo fuente del "scheduler":
+
+	sched.h <--- /usr
+			/src
+			 /linux-headers-<version-kernel>
+				/include
+				    /linux
+
+ en la definicion de "task_struct" <--- definicion del BCP
+(para buscarlo en el fichero:  less sched.h
+ pulsas shift+7:  /task_struct
+ vas pulsando "n" (next) hasta alcanzar la linea donde pone
+al comienzo: 
+		struct task_struct {
+		...
+
+
+el tipo de info q se almacena en el BCP:
+	- pid del proceso (process-identifier)
+	- ppid del proceso (parent-process-identifier)
+	en linux todo proceso tiene un proceso padre del 
+	que nace o se crea (el proceso hijo se crea a partir
+	del padre por una labor de "duplicado" ---> fork()
+	es una funcion del sistema del kernel, luego el 
+	proceso padre lo q hace es sustituir la info del 
+	hijo en ese proceso duplicado:  man fork)
+
+	en linux todo proceso tiene un padre, el padre de
+	todos seria init o systemd
+
+	- prioridad del proceso(base), bondad del proceso
+	  o prioridad dinamica del proceso
+
+	- tipo de planificacion de los hilos del proceso.
+	El scheduler en linux tiene hasta 5 algoritmos de
+	planificacion diferentes a la hora de meter los 
+	hilos de los procesos en la CPU (man sched):
+
+		SCHED_OTHER <--- round robin basado en 
+			prioridades (como en windows)
+
+		SCHED_RR <---- round robin sin prioridades
+
+		SCHED_BATCH <-- algoritmo para procesos en
+				segundo plano
+
+		SCHED_FIFO <--- algoritmo para procesos en
+				segundo plano con menor 
+				prioridad q los BATCH
+				First in-First Out
+
+
+		SCHED_IDLE <--- algoritmo para procesos de
+				muy baja prioridad q estan
+				en estado waiting durante
+				mucho tiempo
+
+
+
+	CPU <--- core1  core2 core3 ...
+		 hilo1  hilo3  hilo15
+		proc1   proc2  proc3
+	  	 |---------|-----|
+			|
+		 	SCHEDULER
+	|---------------------------------------|
+    Sched-other		Sched-RR  Sched-FIFO  ...
+	|		  |		|
+ proc4-proc15-proc21   proc10-proc22  proc101-proc50
+ -----			      ------  -------
+ next			       next    next
+
+
+	- el ejecutable a lanzar por el proceso 
+	 (nombre, directorio donde se encuentra)
+
+	- variables de entorno para el funcionamiento
+	del ejecutable
+
+	- Usuario Real(UID),Usuario Efectivo(EUID),
+	Grupo Real(GID), Grupo Efectivo(EGID) q lanza el
+	 ejecutable del proceso
+
+	- regiones de memoria real, memoria virtual(swap), 
+	registros de CPU, uso de CPU
+
+	- estado del proceso (de los hilos)
+
+	
+    Zombie <---Runnig(Executing)-----> Terminated
+		  |
+		  |
+		Ready <--------------------(created)
+		  |-----------|
+		  |           |
+		Waiting <-----> Sleeping
+
+
+DIRECTORIO VIRUTAL /proc
+-------------------------
+el kernel de linux reserva en RAM una region exclusiva  para
+almacenar toda la informacion del arbol de procesos (en esta
+region se almacenan los BCPs de todos los procesos)
+
+esta informacion en RAM la organiza como si fuera un sist.
+de ficheros "virtual"(se destruye cuando se apaga el ordena)
+
+	- cada BCP de un proceso se representa por un
+	directorio de nombre el PID de ese proceso.
+	p.e: systemd (proceso padre de todos) PID:1
+
+	/proc
+	   \1 <---directorio almacena el BCP de systemd
+	
+	en estos directorios te muestra toda la info del
+	BCP del proceso:
+		link "exe" <---- ejecutable
+		fich. "environ" <--- variables de entorno
+		fich. "maps" <---zonas de memoria de las
+			librerias q usa el ejecutable
+		fich. "sched" <--- detalles de planificacion
+
+
+	- el resto de ficheros/directorios de /proc q no
+	son bcps de procesos hacen referencia a la config.
+	del kernel y del hardware del equipo
+
+---------------------------------------------------------
+COMANDOS DE GESTION DE PROCESOS EN BASH
+
+ps <---- es el comando q te muestra la lista de procesos
+	en ejecucion en ese instante
+
+  al comando ps le puedes pasar opciones en funcion de
+ la info q quieras mostrar: (man ps o mejor: ps --ayuda t)
+
+	ps -opcion1 valor  -opcion2 valor ....
+
+
+tienes opciones de:
+
+	- formato de salida de la informacion:
+		-f ----> full format (uid,pid,ppid,
+			start-time,tty o consola,
+			 time o tiempo de ejecucion, cmd o
+			aplicacion q ejecuta el proceso)
+		- H ----> muestra la lista de procesos
+			en forma jerarquica (arbol de
+			procesos)
+
+		-l ---> version extendida de -f q muestra
+			estado del proceso, prioridad y
+			bondad
+
+		-o prop,prop,prop,... ---> la opcion -o
+			es la mas potente pq permite 
+			personalizar lo q quieres mostrar
+			de cadda proceso. Para ver q valores
+			puedes poner en cada prop ir a
+			man ps ----> seccion: 
+				STANDARD FORMAT SPECIFIERS
+
+			(linea 595 aprox)
+
+		ej: quiero simular con -o la opcion -f:
+
+		ps -f
+		ps -o euser,pid,ppid,stime,tty,time,cmd
+
+
+	- seleccion o filtro de procesos a mostrar
+
+		-e <-----muestra tooooooooodos los procesos
+			q existen en ejecucion en ese
+			instante
+
+		-p PID <---- muestras la info del proceso
+			  con ese pid
+
+		ej:
+			ps -f -p 1
+
+
+		-C CMD <--- muestras la info del proceso
+			que ejecuta ese comando o aplicacion
+
+		ej:
+		  ps -f -C firefox
+		  ps -o pid,ppid,uid,%cpu,cmd -C firefox
+
+
+		-u uid o nombre_usuario <---- seleccionas
+			los procesos q pertenecen a ese
+			usuario
+
+		ej: procesos del usuario _Neo_ :
+
+			ps -l -H -u _Neo_
+
+
+
+
+		-g gid o nombre_grupo <---- seleccionas
+			los procesos q pertenecen a ese
+			grupo
+
+
+		ej: procesos lanzados por los usuarios
+		q pertenecen al grupo administradores:
+
+			ps -H -g root
+
+
+cambiar el estado de un proceso mandandole una seÃ±al
+----------------------------------------------------
+para hacer esto, se usa el comando:
+
+	kill [-opciones]
+	      ---------
+		\-->
+			-l <---lista todas las señales q
+				puedes mandar a un proceso
+			-s nombre_señal <---mandas esa señal
+					al proceso
+			-n numero_señal<--mandas ese nº de
+					señal al proceso
+
+	ej:
+		kill -s SIGTERM 5667
+				----
+				  \--> pid del proceso
+					al q mando la señal
+					SIGTERM
+
+
+comandos:
+	pkill ----> es capaz de mandar una señal a un
+		conjunto de procesos q cumplen un
+		determinado patron, en vez de ir uno 
+		a uno q es lo q tendrias q hacer con kill
+
+		pkill [-opciones] patron_procesos
+
+
+	ej:
+    pkill -SIGTERM "^\(firefox\|gedit\|bash\)$"
+
+	es equivalente a:
+
+
+   kill -s SIGTERM `ps --no-headers -o pid -C gedit`
+ o kill -s SIGTERM `pidof gedit`
+
+   kill -s SIGTERM `ps --no-headers -o pid -C bash`
+   kill -s SIGTERM `ps --no-headers -o pid -C firefox`
+		    ---------------------------------
+			  \--- el resultado del cmando ps
+				se incruta aqui
+
+	pid=`ps --no-headers -o pid -C firefox`
+	kill -s SIGTERM	$pid
+
+
+
+comandos para cambiar la prioridad de un proceso
+------------------------------------------------
+mas q la prioridad lo q cambian es la bondad del proceso
+(es justo lo opuesto a la prioridad, cuanto "mas bondadoso"
+es un proceso, mas recursos cede al resto, con lo q tarda
+mas en ejecutarse y su prioridad baja)
+
+la bondad puede ir de +20      a    -19
+		     (poca pri)    (mucha pri)
+
+dos casos:
+	- el comando "nice" se usa para procesos q aun
+	no se han inicializado y quieres q comiencen con
+	una determinada bondad
+
+		nice -n nÂº_bondad  comando
+
+	ej: yo quiero ejecutar firefox desde el comienzo
+	con baja prioridad=> bondad positiva, de +1 a +20
+
+		nice -n 10 firefox
+
+	-----------------------------------
+	practica con nice, jobs, fg, bg, &
+	-----------------------------------
+1.  lanzar la calculadora (gnome-calculator) con bondad 
+positiva (baja prioridad): 20 a 0.
+ponerlo en background nada mas lanzarlo
+2.  comprobarlo con jobs
+3.  pasarlo a primer plano con fg
+4.  pararlo con ctr+Z
+5.  comprobar con jobs q esta Detenido
+6.  volver a lanzar su ejecucion en segundo plano con bg
+7.  volverlo a pasar a primer plano con fg
+8.  parar el proceso con ctrl+C
+9. comprobar q no existe con jobs
+ ----------------------
+1. nice -n 10 gnome-calculator  &
+2. jobs ------> sale:
+	 [1]+  Ejecutando    nice -n 10 gnome-calculator &
+
+3. fg %1 
+4. pulsamos Ctrl+Z ----> te muestra [1]+ Detenido ...
+
+5. jobs ------> sale:
+	[1]+  Detenido       nice -n 10 gnome-calculator
+6. bg %1
+
+7. fg %1
+8. pulsamos Ctrl+C
+9. jobs
+-------------------------------------------
+
+ - si el proceso asociado a una aplicacion YA SE ESTA
+EJECUTANDO no puedo usar nice para cambiar la bondad, 
+tienes q usar el comando "renice"
+
+	renice -n nÂºbondad -p pid_proceso 
+
+  ej: ejecutamos la calculadora y la ponemos en segundo
+     plano:
+	     gnome-calculator &
+
+    vemos del proceso asociado su pid,ppid,prioridad,...
+
+	ps -o pid,ppid,pri,nice,cmd -C gnome-calculator
+
+
+     cambiamos el valor de la bondad a un valor alto
+    (la prioridad bajara). Como se esta ya ejecutando
+    NO PUEDO USAR NICE!!!
+
+	renice -n 10 -p `pidof gnome-calculator`
+
+
+    si volvemos a ver del proceso su prioridad,.... tiene
+   q haber cambiado:
+
+	ps -o pid,ppid,pri,nice,cmd -C gnome-calculator

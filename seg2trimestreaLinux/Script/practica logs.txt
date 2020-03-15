@@ -1,0 +1,57 @@
+practica	********  EXAMEN   ********	
+--------
+IP:X.Y.Z.W
+servidor-logs													clientes-log
+-------------													------------
+rsyslog.service													rsyslog.service
+														
+configurar para que:												configurarlo para que mande los mensajes de auth al
+  - escuche por un puerto											servidor: X.Y.Z.W:xxx (si cambias puerto, indicarlo)
+  (x defecto es el 514)												
+														Programar un script que mande mensajes al log de tipo
+  - udp														auth de forma continua para provocar la rotacion en el
+  - los mensajes de auth:											server.
+	- los locales los manda a fichero /var/log/auth.log
+	- los remoto los tiene que mandar a fichero /var/log/auth_remote.log
+	  con plantilla personalizada:
+					" mensaje de auth.log de ip: ...
+					  a la hora: ..... con contenido: ...... "
+
+  - la rotacion de los log de auth sea diariamente o cuando a un tamaño de 100kb,
+    maximo numero de rotaciones de 6 ficheros.
+
+
+REINICIAR EL SERVICIO!!!!!!!
+systemctl restart rsyslog.service
+
+
+
+
+
+en el cliente:
+fichero configuracion ( añadir )
+/etc/rsyslog.conf
+------------------
+template(name"mensajesEXT" type="string" string="REMOTEAUTH mensaje auth al externo....%msg%")
+
+
+
+fichero de reglas: ( modificar )
+/etc/rsyslog.d/50-default.conf
+------------------------------------
+auth,authpriv.*			@X.Y.Z.W;mensajesExt
+
+
+REINICIAR EL SERVICIO!!!!!!!
+systemctl restart rsyslog.service
+
+
+
+---------------------------
+para probarlo. en servidor:
+	touch /var/log/auth_remote.log
+	tail -f /var/log/auth_remote.log
+
+
+en cliente:
+   logger -p auth.err -t "[PRUEBA]" "......MENSAJE DE PRUEBA AL SERVIDOR....."

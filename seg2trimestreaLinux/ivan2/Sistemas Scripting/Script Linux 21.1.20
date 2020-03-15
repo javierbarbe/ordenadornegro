@@ -1,0 +1,216 @@
+-----------------------------------
+BASH SCRIPTING
+-----------------------------------
+EN linux los ficheros no tienen extensiones, el contenido se interpreta en funcion de los metadatos del fichero. 
+Los ficheros de tipo script empiezan con estos dos caracteres:
+
+#! /bin/bash
+
+
+COMENTARIOS
+-----------
+los comentarios en linux se ponen con el caracter: #
+pueden aparecer al principio de una linea o al final
+
+#..... esta linea esta comentada
+#..... esta linea tambn esta comentada
+ps -e -f #comando para mostrar info de procesos 
+
+si quieres comentar un grupo de lineas tendrias que ir linea por linea poniendo # delante; truco :
+
+: <<delimitador
+......
+......
+......
+delimitador
+
+ej: 
+: <<kk
+esta es la primera linea de comentario
+esta es la segunda linea
+ps -e -f 
+.... y otra .....
+kk
+
+
+------------------------
+COMO EJECUTAR UN SCRIPT
+-------------------------
+Para poder ejecutar un script:
+	1º) dar permisos de ejecucion al script, para ello se usa el comando:
+		
+		chmod a+x /ruta/nombre_script
+		      ---
+			\--> a = all-users
+			     +x = + significa añadir el permiso "x" de ejecucion
+
+
+	2º) para ejecutar un script, te situas en el directorio donde esta el script:
+			./nombre_script
+
+
+--------------------
+VARIABLES EN SCRIPTS
+--------------------
+En bash no existen tipos de variables, simplemente almacenas el valor que quieras en la variable. El incoveniente surge cuando haces un uso indebido del contenido de la variable
+
+Ej: operaciones con string,....saltara un error
+
+nombre_variable = valor
+
+puedo almacenar en variables el resultado de la ejecucion de un comando o comandos:
+1º forma)
+	noombre_variable=`comando1...`
+
+2º forma)
+	$():
+	nombre_variable=$(comando1...)
+
+
+¿ COMO RECUPERO EL VALOR DE UNA VARIABLE ?
+	$nombre_variable   o   ${nombre_variable}
+
+
+
+¿ COMO PIDO EL VALOR DE UNA VARIABLE ?
+	read [-opciones] nombre_variable
+	     -----------
+		\--> -p "mensaje prompt"
+		     -s (modo silencioso) (no aparece en pantalla lo que escribes)
+		     -t numero_seg --> limite de tiempo para meter un valor
+		     -n num_max_caract  --> nº maximo de caractereskil
+
+
+etc/init.d      --aqui tenemos los servicios(Que son scripts)
+./cron start    --start,reload,stop....cambiar los servicios
+./cron status   --vemos el estado del servicio
+nano            --vemos el script del servicio
+sh -x ./cron    --para depurar
+bash -x ./cron  --para depurar en modo avanzado
+;;              --es como el break
+`               --para ejecutar un comando siempre tiene que ir con comillas invertidas y ejecutarse en otro comando   
+$0              --NOmbre del script que estas ejecutando
+$$              --te dice el pid del proceso del comando ejecutandose
+
+nc              --abrir un puerto en tu maquina(Como meterse en otro ordena)
+nc -l 10.1.0.115 -p 7777    puerto es el que queramos que no este ocupado(-l escuchar abrir el puerto)
+mkfifo           --crear tuberia con nombre mandas un comando a otro lado
+mkfifo ./tuberia  (le estamos dando el nombre tuberia pero podemos poner lo que queramos)
+tmp 		  --directorio temporal 
+
+
+
+----------------------------------
+	CONDICIONALES
+----------------------------------
+	if codigo_salida_comando
+	then
+		comando1
+		comando2
+	[elif codigo_salida_comando
+	then
+		comando1
+		comando2
+	else 
+		comando1
+		comando2
+	]
+	fi
+
+--------------------------------------------------
+expresion shorcut condicional (operador ternario):
+--------------------------------------------------
+  condicion ? comando_true : comando_false
+
+en bash:
+  comandos_ejecutar && comandos si ok || comandos si mal
+
+es una forma corta  if comandos_ejecutar
+		    then
+			comandos si ok
+		    else 
+			comandos si mal
+		    fi
+
+
+
+ej: 
+	read -p "introduce opcion:_" opcion
+	if test $opcion -lt 1 -o $opcion -gt 3
+	then
+		echo "opcion incorrecta"
+		exit 0
+	elif test $opcion -eq 1 
+	then
+		echo "has pulsado opcion 1"
+	elif test $opcion -eq 2 
+	then 	
+		echo "has pulsado opcion 2"
+	elif test $opcion -eq 3 
+	then
+		echo "has pulsado opcion 3"
+	fi
+	
+
+
+ej : 
+	if cd /home/ajkdgfjkagjhfdabfna
+	then
+		echo "ese directorio existe en /home"
+	else
+		echo "ese directorio NO EXISTE!!!!!
+	fi
+
+
+-bucles for(each)
+ for variable in lista_valores
+do
+  comando1
+  comando2
+ ..
+[break]
+[continue]
+done
+
+ej: for nombre in santiago ivan pepe julia
+do
+  echo "la variable nombre vale.....$nombre"
+done
+
+
+ej:la lista de valores la puedo generar en ejecucion como salida de un comando (siempre que genere listas de valores separadas por un espacio ,tabulador o salto de linea)
+
+
+for directorio in `ls/home`
+do
+ echo"directorio vale...$directorio"
+done
+
+ej:passwd(son usuarios del sistema)
+for linea in `cat /etc/passwd`;do echo "linea vale...$linea";done
+
+
+bucle for clasico
+
+for ((inicio;condicion;expresion))
+do
+
+done
+ej:
+for ((a=0;a<=10;a++))
+do
+echo "el valor de la variable 'a' vale...$a"
+donefor
+
+---------------------------------------
+0. Entrada de datos
+1. Salida del comando 1>
+2. Salida de errores /dev/null
+3 - 9 . Descriptores reservados ( para usarlos de forma personalizada ) 
+
+Puedes redirigir dos a la vez al mismo fichero o a dos ficheros diferentes 1>./salida.txt 2>./errores.txt
+si quieres redirigir los dos al mismo 1>./fichero_salida.txt 2>&1 ( &1 te dice que mande el 2> al mismo path que el 1 )
+
+-------------------
+echo "hola como estas" | cut -d " " 1
+
